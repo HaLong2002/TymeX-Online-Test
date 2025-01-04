@@ -1,0 +1,79 @@
+# Android Studio specific
+.idea/
+.gradle/
+local.properties
+.DS_Store
+*.iml
+build/
+captures/
+.externalNativeBuild/
+
+# Kotlin-specific
+*.class
+*.kt.metadata
+*.kotlin_module
+
+# Generated files
+gen/
+bin/
+obj/
+out/
+
+# Proguard
+proguard/
+
+# Logs
+*.log
+*.log.*
+
+# Dependency directories
+/.cxx/
+/gradle/
+/node_modules/
+
+# Android specific
+*.apk
+*.ap_
+*.aab
+*.dex
+*.so
+*.o
+*.hprof
+*.orig
+*.keystore
+*.jks
+
+# Coverage files
+*.ec
+coverage/
+
+# OS-specific
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+
+# Temporary files
+*.tmp
+*.temp
+*.swp
+*.swo
+
+# IDE files
+.idea/
+*.ipr
+*.iws
+*.idx
+*.workspace
+*.tmproj
+*.tmproject
+
+# MacOS
+.DS_Store
+
+# Windows
+Thumbs.db
+ehthumbs.db
+
+# Linux
+*~

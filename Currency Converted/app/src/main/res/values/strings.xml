@@ -1,0 +1,4 @@
+<resources>
+    <string name="app_name">Currency Converted</string>
+    <string name="amount">Amount</string>
+</resources>

@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/main"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:padding="10dp"
+    android:orientation="vertical"
+    tools:context=".MainActivity">
+
+    <RelativeLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="@color/white"
+        android:padding="20dp">
+
+        <TextView
+            android:id="@+id/amount"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/amount"
+            android:textSize="@dimen/amount_text"
+            android:layout_marginBottom="@dimen/dimen_items"
+            android:textColor="@color/black"/>
+
+        <Spinner
+            android:id="@+id/from_currency"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_below="@id/amount" />
+
+        <EditText
+            android:id="@+id/input_amount"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_below="@id/amount"
+            android:layout_toRightOf="@id/from_currency"
+            android:textColor="@color/black"/>
+    </RelativeLayout>
+
+    <RelativeLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="@color/white"
+        android:padding="20dp">
+
+        <TextView
+            android:id="@+id/converted_amount"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Converted Amount"
+            android:textSize="@dimen/amount_text"
+            android:layout_marginBottom="@dimen/dimen_items"
+            android:textColor="@color/black"/>
+
+        <Spinner
+            android:id="@+id/to_currency"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_below="@id/converted_amount" />
+
+        <EditText
+            android:id="@+id/input_converted"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_below="@id/converted_amount"
+            android:layout_toRightOf="@id/to_currency"
+            android:enabled="false"
+            android:textColor="@color/black"/>
+    </RelativeLayout>
+</LinearLayout>
