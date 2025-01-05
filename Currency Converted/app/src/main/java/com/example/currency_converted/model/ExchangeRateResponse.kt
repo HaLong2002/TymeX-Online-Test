@@ -1,13 +1,14 @@
 package com.example.currency_converted.model
 
-import com.google.gson.annotations.SerializedName
 
 data class ExchangeRateResponse(
-
-    @SerializedName("success") var success: Boolean?,
-    @SerializedName("timestamp") var timestamp: Int?,
-    @SerializedName("base") var base: String?,
-    @SerializedName("date") var date: String?,
-    @SerializedName("rates") var rates: Map<String, Double>?
-
+    val result: String,
+    val documentation: String,
+    val terms_of_use: String,
+    val time_last_update_unix: Long,
+    val time_last_update_utc: String,
+    val time_next_update_unix: Long,
+    val time_next_update_utc: String,
+    val base_code: String,
+    val conversion_rates: Map<String, Double>
 )
