@@ -36,7 +36,8 @@
             android:layout_height="wrap_content"
             android:layout_below="@id/amount"
             android:layout_toRightOf="@id/from_currency"
-            android:textColor="@color/black"/>
+            android:textColor="@color/black"
+            android:inputType="numberDecimal"/>
     </RelativeLayout>
 
     <RelativeLayout
