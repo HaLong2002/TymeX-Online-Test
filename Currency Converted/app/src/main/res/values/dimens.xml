@@ -1,5 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <dimen name="amount_text">20sp</dimen>
+    <dimen name="amount_text">15sp</dimen>
     <dimen name="dimen_items">10dp</dimen>
+    <dimen name="dimen_with_border">20dp</dimen>
+    <dimen name="input">25sp</dimen>
 </resources>
