@@ -22,11 +22,37 @@
         android:textSize="30sp"
         android:textStyle="bold" />
 
+    <com.google.android.material.progressindicator.CircularProgressIndicator
+        android:id="@+id/progress_circular"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center"
+        android:indeterminate="true" />
+
+    <TextView
+        android:id="@+id/error"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:textSize="20sp"
+        android:layout_gravity="center"/>
+
+    <Button
+        android:id="@+id/retry_button"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center"
+        android:text="@string/retry"
+        android:textSize="20sp"
+        android:onClick="reconnectNetwork"
+        android:visibility="gone"/>
+
     <LinearLayout
+        android:id="@+id/converter_layout"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="vertical"
-        android:background="@color/design_default_color_background">
+        android:background="@color/design_default_color_background"
+        android:visibility="gone">
 
         <RelativeLayout
             android:layout_width="match_parent"
@@ -61,7 +87,7 @@
                         android:dropDownHeight="wrap_content"
                         android:dropDownWidth="match_parent"
                         android:paddingLeft="10dp"
-                        android:inputType="none"
+                        android:inputType="textCapCharacters"
                         android:textAppearance="?attr/textAppearanceTitleMedium" />
 
                 </com.google.android.material.textfield.TextInputLayout>
@@ -141,7 +167,7 @@
                         android:dropDownHeight="wrap_content"
                         android:dropDownWidth="match_parent"
                         android:paddingLeft="10dp"
-                        android:inputType="none"
+                        android:inputType="textCapCharacters"
                         android:textAppearance="?attr/textAppearanceTitleMedium" />
                 </com.google.android.material.textfield.TextInputLayout>
 
@@ -159,10 +185,12 @@
     </LinearLayout>
 
     <RelativeLayout
+        android:id="@+id/exchange_rate_layout"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginTop="@dimen/dimen_with_border"
-        android:layout_marginBottom="@dimen/dimen_with_border">
+        android:layout_marginBottom="@dimen/dimen_with_border"
+        android:visibility="gone">
 
         <TextView
             android:id="@+id/lb_exchange_rate"

@@ -1,0 +1,75 @@
+# IntelliJ IDEA
+.idea/
+*.iml
+*.iws
+
+# Eclipse
+.project
+.classpath
+.settings/
+
+# NetBeans
+nbproject/
+
+# VS Code
+.vscode/
+
+# Build directories
+/build/
+/target/
+
+# Gradle
+.gradle/
+build.gradle
+
+# Maven
+.mvn/
+pom.xml.tag
+pom.xml.releaseBackup
+pom.xml.versionsBackup
+pom.xml.diff
+
+# JAR files
+*.jar
+
+# Log files
+*.log
+
+# Operating System files
+.DS_Store
+Thumbs.db
+
+# Generated files
+*.class
+*.swp
+*~.nib
+*.bak
+
+# JetBrains Rider
+.idea/
+
+# Other IDE files
+*.launch
+
+# Java specific files
+*.jfm
+*.p12
+*.keystore
+
+# Windows Installer files
+*.cab
+*.msi
+*.msm
+*.msp
+
+# JetBrains Rider
+.idea/
+
+# Gradle Wrapper files
+gradle/wrapper/gradle-wrapper.jar
+gradle/wrapper/gradle-wrapper.properties
+
+# Temporary files
+*.tmp
+*.bak
+*.swp
