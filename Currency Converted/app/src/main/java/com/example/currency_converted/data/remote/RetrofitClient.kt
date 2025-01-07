@@ -1,4 +1,4 @@
-package com.example.currency_converted.data.remote
+package com.example.currency_converted.data.remote.remote
 
 import okhttp3.OkHttpClient
 import retrofit2.Retrofit

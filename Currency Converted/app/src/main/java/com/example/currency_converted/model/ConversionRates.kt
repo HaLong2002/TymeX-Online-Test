@@ -1,7 +1,7 @@
 package com.example.currency_converted.model
 
 
-data class ExchangeRateResponse(
+data class ConversionRates(
     val result: String,
     val documentation: String,
     val terms_of_use: String,

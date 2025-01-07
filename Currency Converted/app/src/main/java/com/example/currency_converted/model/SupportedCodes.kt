@@ -2,7 +2,7 @@ package com.example.currency_converted.model
 
 import com.google.gson.annotations.SerializedName
 
-data class CodesResponse(
+data class SupportedCodes(
     val result: String,
     val documentation: String,
     @SerializedName("terms_of_use")

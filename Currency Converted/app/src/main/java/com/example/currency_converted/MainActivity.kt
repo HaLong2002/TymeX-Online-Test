@@ -22,10 +22,10 @@ import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
-import com.example.currency_converted.data.remote.APIService
-import com.example.currency_converted.data.remote.ApiUtils
-import com.example.currency_converted.model.CodesResponse
-import com.example.currency_converted.model.ExchangeRateResponse
+import com.example.currency_converted.data.remote.remote.APIService
+import com.example.currency_converted.data.remote.remote.ApiUtils
+import com.example.currency_converted.model.SupportedCodes
+import com.example.currency_converted.model.ConversionRates
 import com.google.android.material.floatingactionbutton.FloatingActionButton
 import com.google.android.material.progressindicator.CircularProgressIndicator
 import com.google.android.material.textfield.MaterialAutoCompleteTextView
@@ -159,10 +159,10 @@ class MainActivity : AppCompatActivity() {
 
     private fun getCurrencyCodes() {
         mAPIService.getCodes()
-            .enqueue(object : retrofit2.Callback<CodesResponse> {
+            .enqueue(object : retrofit2.Callback<SupportedCodes> {
                 override fun onResponse(
-                    call: retrofit2.Call<CodesResponse>,
-                    response: retrofit2.Response<CodesResponse>
+                    call: retrofit2.Call<SupportedCodes>,
+                    response: retrofit2.Response<SupportedCodes>
                 ) {
                     if (response.isSuccessful) {
                         val body = response.body()
@@ -191,7 +191,7 @@ class MainActivity : AppCompatActivity() {
                     }
                 }
 
-                override fun onFailure(call: retrofit2.Call<CodesResponse>, t: Throwable) {
+                override fun onFailure(call: retrofit2.Call<SupportedCodes>, t: Throwable) {
                     Log.e("Error", "Failed to fetch data: ${t.message}")
                     lb_error.setText("Failed to fetch data: ${t.message}. Please try again later.")
                     progress.visibility = View.GONE
@@ -222,10 +222,10 @@ class MainActivity : AppCompatActivity() {
 
     private fun getExchangeRates(base: String, target: String) {
         mAPIService.getExchangeRates(base)
-            .enqueue(object : retrofit2.Callback<ExchangeRateResponse> {
+            .enqueue(object : retrofit2.Callback<ConversionRates> {
                 override fun onResponse(
-                    call: retrofit2.Call<ExchangeRateResponse>,
-                    response: retrofit2.Response<ExchangeRateResponse>
+                    call: retrofit2.Call<ConversionRates>,
+                    response: retrofit2.Response<ConversionRates>
                 ) {
                     if (response.isSuccessful) {
                         val body = response.body()
@@ -243,7 +243,7 @@ class MainActivity : AppCompatActivity() {
                     }
                 }
 
-                override fun onFailure(call: retrofit2.Call<ExchangeRateResponse>, t: Throwable) {
+                override fun onFailure(call: retrofit2.Call<ConversionRates>, t: Throwable) {
                     Log.i(ContentValues.TAG, "Failed to fetch data: ${t.message}")
                 }
             })
