@@ -2,13 +2,15 @@ package com.example.currency_converted.data.remote
 
 import android.content.ContentValues
 import android.content.Context
+import android.database.Cursor
 import android.database.sqlite.SQLiteDatabase
 import android.database.sqlite.SQLiteOpenHelper
+import android.util.Log
 import com.example.currency_converted.model.ConversionRates
 import com.example.currency_converted.model.SupportedCodes
 
 
-abstract class MyDatabaseHelper(context: Context) :
+class MyDatabaseHelper(context: Context) :
     SQLiteOpenHelper(context, DATABASE_NAME, null, DATABASE_VERSION) {
 
     companion object {
@@ -65,29 +67,60 @@ abstract class MyDatabaseHelper(context: Context) :
     fun addConversionRates(rate: ConversionRates) {
         val db = this.writableDatabase
 
-        rate.conversion_rates.forEach { (targetCode, conversionRate) ->
-            val cv = ContentValues().apply {
-                put(COLUMN_BASE_CODE, rate.base_code)
-                put(COLUMN_TARGET_CODE, targetCode)
-                put(COLUMN_RATE, conversionRate)
-                put(COLUMN_LAST_UPDATED, rate.time_last_update_utc)
+        try {
+            rate.conversion_rates.forEach { (targetCode, conversionRate) ->
+                val cv = ContentValues().apply {
+                    put(COLUMN_BASE_CODE, rate.base_code)
+                    put(COLUMN_TARGET_CODE, targetCode)
+                    put(COLUMN_RATE, conversionRate)
+                    put(COLUMN_LAST_UPDATED, rate.time_last_update_utc)
+                }
+                db.insert(TABLE_CONVERSION_RATES, null, cv)
             }
-            db.insert(TABLE_CONVERSION_RATES, null, cv)
+        } catch (e: Exception) {
+            Log.e("DatabaseHelper", "Error adding conversion rates: ${e.message}")
+        } finally {
+            db?.close()
         }
-
-        db.close()
     }
 
     fun addSupportedCodes(codes: SupportedCodes) {
         val db = this.writableDatabase
 
-        codes.supportedCodes.forEach { (code, name) ->
-            val cv = ContentValues().apply {
-                put(COLUMN_CODE, code)
-                put(COLUMN_NAME, name)
+        try {
+            codes.supportedCodes.forEach { (code, name) ->
+                val cv = ContentValues().apply {
+                    put(COLUMN_CODE, code)
+                    put(COLUMN_NAME, name)
+                }
+                db.insert(TABLE_SUPPORTED_CODES, null, cv)
             }
-            db.insert(TABLE_SUPPORTED_CODES, null, cv)
+        } catch (e: Exception) {
+            Log.e("DatabaseHelper", "Error adding supported codes: ${e.message}")
+        } finally {
+            db?.close()
         }
-        db.close()
+    }
+
+    fun clearAllConversionRates() {
+        val db = this.writableDatabase
+        db.execSQL("DELETE FROM $TABLE_CONVERSION_RATES")
+    }
+
+    fun getAllSupportedCodes(): List<String> {
+        val codes = mutableListOf<String>()
+        val db = this.readableDatabase
+        val query = "SELECT * FROM $TABLE_SUPPORTED_CODES"
+
+        var cursor: Cursor? = null
+        if (db != null) {
+            cursor = db.rawQuery(query, null)
+        }
+        cursor?.use {
+            while (it.moveToNext()) {
+                codes.add(it.getString(it.getColumnIndexOrThrow(COLUMN_CODE)))
+            }
+        }
+        return codes
     }
 }

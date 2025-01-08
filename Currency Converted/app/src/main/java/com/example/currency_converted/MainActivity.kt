@@ -1,15 +1,11 @@
 package com.example.currency_converted
 
-import android.content.ContentValues
 import android.content.Context
-import android.graphics.Rect
-import android.net.ConnectivityManager
 import android.os.Bundle
 import android.text.Editable
 import android.text.TextWatcher
 import android.util.Log
 import android.view.View
-import android.view.ViewGroup
 import android.view.inputmethod.InputMethodManager
 import android.widget.ArrayAdapter
 import android.widget.AutoCompleteTextView
@@ -22,13 +18,19 @@ import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
+import androidx.work.Constraints
+import androidx.work.ExistingPeriodicWorkPolicy
+import androidx.work.ExistingWorkPolicy
+import androidx.work.NetworkType
+import androidx.work.OneTimeWorkRequestBuilder
+import androidx.work.PeriodicWorkRequestBuilder
+import androidx.work.WorkManager
 import com.example.currency_converted.data.remote.remote.APIService
-import com.example.currency_converted.data.remote.remote.ApiUtils
-import com.example.currency_converted.model.SupportedCodes
-import com.example.currency_converted.model.ConversionRates
 import com.google.android.material.floatingactionbutton.FloatingActionButton
 import com.google.android.material.progressindicator.CircularProgressIndicator
 import com.google.android.material.textfield.MaterialAutoCompleteTextView
+import java.util.Calendar
+import java.util.concurrent.TimeUnit
 
 
 class MainActivity : AppCompatActivity() {
@@ -59,33 +61,21 @@ class MainActivity : AppCompatActivity() {
             insets
         }
 
-        base_currency = findViewById(R.id.dropdown_menu1);
-        target_currency = findViewById(R.id.dropdown_menu2);
-        input_amount = findViewById(R.id.input_amount);
-        input_converted = findViewById(R.id.input_converted);
-        exchange_rate = findViewById(R.id.exchange_rate);
-        val rootLayout = findViewById<ViewGroup>(R.id.main)
-        swap_button = findViewById(R.id.swap_button)
-        progress = findViewById(R.id.progress_circular)
-        converter_layout = findViewById(R.id.converter_layout)
-        exchange_rate_layout = findViewById(R.id.exchange_rate_layout)
-        lb_error = findViewById(R.id.error)
-        retry_button = findViewById(R.id.retry_button)
+        initViews()
 
-        rootLayout.setOnTouchListener { v, event ->
-            if (currentFocus != null) {
-                val rect = Rect()
-                currentFocus!!.getGlobalVisibleRect(rect)
-                if (!rect.contains(event.rawX.toInt(), event.rawY.toInt())) {
-                    currentFocus!!.clearFocus() // Remove focus from AutoCompleteTextView
-                }
-            }
-            false
-        }
+        setupInitialFetch()
+        setupPeriodicUpdate()
 
-        mAPIService = ApiUtils.getApiService();
-
-        checkNetworkConnection()
+//        rootLayout.setOnTouchListener { v, event ->
+//            if (currentFocus != null) {
+//                val rect = Rect()
+//                currentFocus!!.getGlobalVisibleRect(rect)
+//                if (!rect.contains(event.rawX.toInt(), event.rawY.toInt())) {
+//                    currentFocus!!.clearFocus() // Remove focus from AutoCompleteTextView
+//                }
+//            }
+//            false
+//        }
 
         base_currency.setOnClickListener { base_currency.isCursorVisible = true }
         base_currency.setOnItemClickListener { parent, view, position, id ->
@@ -95,7 +85,6 @@ class MainActivity : AppCompatActivity() {
                 parent.getItemAtPosition(position).toString().split("-")[0].trim()
             base_currency.setText(selectedCurrency)
             val target = target_currency.text.toString()
-            //getExchangeRates(selectedCurrency, target)
         }
 
         target_currency.setOnClickListener { target_currency.isCursorVisible = true }
@@ -131,6 +120,69 @@ class MainActivity : AppCompatActivity() {
         })
     }
 
+    private fun initViews() {
+        base_currency = findViewById(R.id.dropdown_menu1)
+        target_currency = findViewById(R.id.dropdown_menu2)
+        input_amount = findViewById(R.id.input_amount)
+        input_converted = findViewById(R.id.input_converted)
+        exchange_rate = findViewById(R.id.exchange_rate)
+        swap_button = findViewById(R.id.swap_button)
+        progress = findViewById(R.id.progress_circular)
+        converter_layout = findViewById(R.id.converter_layout)
+        exchange_rate_layout = findViewById(R.id.exchange_rate_layout)
+        lb_error = findViewById(R.id.error)
+        retry_button = findViewById(R.id.retry_button)
+    }
+
+    private fun setupInitialFetch() {
+        val constraints = Constraints.Builder()
+            .setRequiredNetworkType(NetworkType.CONNECTED)
+            .build()
+
+        val initialWork = OneTimeWorkRequestBuilder<InitialSetupWorker>()
+            .setConstraints(constraints)
+            .build()
+
+        WorkManager.getInstance(applicationContext)
+            .enqueueUniqueWork(
+                "initial_setup",
+                ExistingWorkPolicy.KEEP,
+                initialWork
+            )
+    }
+
+    private fun setupPeriodicUpdate() {
+        val constraints = Constraints.Builder()
+            .setRequiredNetworkType(NetworkType.CONNECTED)  // Require internet connection
+            .build()
+
+        // Calculate initial delay until next midnight
+        val currentTime = Calendar.getInstance()
+        val nextRun = Calendar.getInstance().apply {
+            add(Calendar.DAY_OF_YEAR, 1)
+            set(Calendar.HOUR_OF_DAY, 0)
+            set(Calendar.MINUTE, 0)
+            set(Calendar.SECOND, 0)
+        }
+
+        val initialDelay = nextRun.timeInMillis - currentTime.timeInMillis
+
+        val updateRequest = PeriodicWorkRequestBuilder<UpdateConversionRatesWorker>(
+            24, TimeUnit.HOURS,  // Repeat every 24 hours
+        )
+            .setInitialDelay(initialDelay, TimeUnit.MILLISECONDS)
+            .setConstraints(constraints)
+            .addTag("conversion_rate_update")  // Tag for identifying the work
+            .build()
+
+        WorkManager.getInstance(applicationContext)
+            .enqueueUniquePeriodicWork(
+                "conversion_rate_update",
+                ExistingPeriodicWorkPolicy.KEEP,  // Keep existing if one exists
+                updateRequest
+            )
+    }
+
     fun hideCursorAndKeyboard(dropDown: AutoCompleteTextView) {
         dropDown.isCursorVisible = false
         // Hide the keyboard
@@ -139,26 +191,8 @@ class MainActivity : AppCompatActivity() {
         inputMethodManager.hideSoftInputFromWindow(dropDown.windowToken, 0)
     }
 
-    fun checkNetworkConnection() {
-        progress.visibility = View.VISIBLE
-        lb_error.setText("")
-        retry_button.visibility = View.GONE
-        // Check the status of the network connection.
-        val connMgr = getSystemService(CONNECTIVITY_SERVICE) as ConnectivityManager
-        val networkInfo = connMgr.activeNetworkInfo
-
-        // If the network is active
-        if (networkInfo != null && networkInfo.isConnected) {
-            getCurrencyCodes()
-        } else {
-            progress.visibility = View.GONE
-            lb_error.setText(getString(R.string.no_network))
-            retry_button.visibility = View.VISIBLE
-        }
-    }
-
-    private fun getCurrencyCodes() {
-        mAPIService.getCodes()
+    /*private fun getCurrencyCodes() {
+        mAPIService.getSupportedCodes()
             .enqueue(object : retrofit2.Callback<SupportedCodes> {
                 override fun onResponse(
                     call: retrofit2.Call<SupportedCodes>,
@@ -198,7 +232,7 @@ class MainActivity : AppCompatActivity() {
                     retry_button.visibility = View.GONE
                 }
             })
-    }
+    }*/
 
     private fun showCurrencyCodes(currencyCodes: List<String>) {
         base_adapter = ArrayAdapter(this@MainActivity, R.layout.list_item, currencyCodes)
@@ -213,41 +247,10 @@ class MainActivity : AppCompatActivity() {
                 target_adapter.getItem(0).toString().split("-")[0].trim(),
                 false
             )
-//            getExchangeRates(
-//                base_adapter.getItem(0).toString().split("-")[0].trim(),
-//                target_adapter.getItem(0).toString().split("-")[0].trim()
-//            )
         }
     }
-
-    private fun getExchangeRates(base: String, target: String) {
-        mAPIService.getExchangeRates(base)
-            .enqueue(object : retrofit2.Callback<ConversionRates> {
-                override fun onResponse(
-                    call: retrofit2.Call<ConversionRates>,
-                    response: retrofit2.Response<ConversionRates>
-                ) {
-                    if (response.isSuccessful) {
-                        val body = response.body()
-                        if (body != null) {
-                            Log.i("Exchange rates: ", "$body")
-                            rates = body.conversion_rates
-                            val formatted = rates[target]?.toBigDecimal()?.toPlainString()
-                            exchange_rate.setText("1 ${base} = ${formatted} ${target}")
-                        } else {
-                            println("Response body is null")
-                        }
-                    } else {
-                        Log.e("Error", "${response.code()}")
-                        Log.d("URL", call.request().url().toString())
-                    }
-                }
-
-                override fun onFailure(call: retrofit2.Call<ConversionRates>, t: Throwable) {
-                    Log.i(ContentValues.TAG, "Failed to fetch data: ${t.message}")
-                }
-            })
-    }
+//        val formatted = rates[target]?.toBigDecimal()?.toPlainString()
+//        exchange_rate.setText("1 ${base} = ${formatted} ${target}")
 
     private fun convertExchangeRate(amount: Double, target: String) {
         val result: Double = amount * rates[target]!!
@@ -272,9 +275,5 @@ class MainActivity : AppCompatActivity() {
 
         input_amount.setText(amount)
         convertExchangeRate(amount_double, target)
-    }
-
-    fun reconnectNetwork(view: View) {
-        checkNetworkConnection()
     }
 }
