@@ -17,19 +17,18 @@ class InitialSetupWorker(
 
     private val apiService: APIService = ApiUtils.getApiService()
     private val prefsHelper = PreferencesHelper(context)
+    private val dbHelper = MyDatabaseHelper(applicationContext)
 
     override suspend fun doWork(): Result {
         return try {
-            // Only fetch supported codes if it's first launch
-            if (prefsHelper.isFirstLaunch()) {
-                val supportedCodes = fetchSupportedCodes()
-                if (supportedCodes != null) {
-                    saveSupportedCodes(supportedCodes)
-                    prefsHelper.setFirstLaunchComplete()
-                }
+            val supportedCodes = fetchSupportedCodes()
+            if (supportedCodes != null) {
+                saveSupportedCodes(supportedCodes)
+                prefsHelper.setFirstLaunchComplete()
             }
             // Then fetch conversion rates for each supported code
             fetchAllConversionRates()
+
             Result.success()
         } catch (e: Exception) {
             Log.e("InitialSetupWorker", "Error: ${e.message}")
@@ -47,15 +46,14 @@ class InitialSetupWorker(
     }
 
     private fun saveSupportedCodes(codes: SupportedCodes) {
-        val dbHelper = MyDatabaseHelper(applicationContext)
         dbHelper.addSupportedCodes(codes)
     }
 
     private suspend fun fetchAllConversionRates() {
-        val dbHelper = MyDatabaseHelper(applicationContext)
-        val supportedCodes = dbHelper.getAllSupportedCodes()
+        //val supportedCodes = dbHelper.getAllSupportedCodes()
+        val listCodes = const_variables().listCodes
 
-        supportedCodes.forEach { code ->
+        listCodes.forEach { code ->
             try {
                 val rates = apiService.getConversionRates(code)
                 if (rates != null) {
@@ -63,6 +61,7 @@ class InitialSetupWorker(
                 }
                 // Add a small delay to avoid overwhelming the API
                 delay(1000)
+                Log.d("InitialSetupWorker", code)
             } catch (e: Exception) {
                 Log.e("InitialSetupWorker", "Failed to fetch rates for $code: ${e.message}")
             }

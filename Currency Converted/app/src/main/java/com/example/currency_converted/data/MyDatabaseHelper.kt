@@ -6,7 +6,9 @@ import android.database.Cursor
 import android.database.sqlite.SQLiteDatabase
 import android.database.sqlite.SQLiteOpenHelper
 import android.util.Log
+import com.example.currency_converted.const_variables
 import com.example.currency_converted.model.ConversionRates
+import com.example.currency_converted.model.ConversionRatesValue
 import com.example.currency_converted.model.SupportedCodes
 
 
@@ -116,11 +118,61 @@ class MyDatabaseHelper(context: Context) :
         if (db != null) {
             cursor = db.rawQuery(query, null)
         }
+
         cursor?.use {
             while (it.moveToNext()) {
                 codes.add(it.getString(it.getColumnIndexOrThrow(COLUMN_CODE)))
             }
         }
+        Log.i("MyDatabaseHelper", codes.toString())
         return codes
+    }
+
+    fun getAllSupportedCodesAndName(): List<String> {
+        val listCodes: List<String> = const_variables().listCodes
+        val codes = mutableListOf<String>()
+        val db = this.readableDatabase
+        //val query = "SELECT * FROM $TABLE_SUPPORTED_CODES"
+        val query =
+            "SELECT * FROM $TABLE_SUPPORTED_CODES WHERE code IN (${listCodes.joinToString(",") { "'$it'" }})"
+
+        var cursor: Cursor? = null
+        if (db != null) {
+            cursor = db.rawQuery(query, null)
+        }
+
+        cursor?.use {
+            while (it.moveToNext()) {
+                codes.add(
+                    it.getString(it.getColumnIndexOrThrow(COLUMN_CODE))
+                )
+            }
+        }
+        return codes
+    }
+
+    fun getAllConversionRates(): List<ConversionRatesValue> {
+        val rates = mutableListOf<ConversionRatesValue>()
+        val db = this.readableDatabase
+        val query = "SELECT * FROM $TABLE_CONVERSION_RATES"
+
+        var cursor: Cursor? = null
+        if (db != null) {
+            cursor = db.rawQuery(query, null)
+        }
+
+        cursor?.use {
+            while (it.moveToNext()) {
+                val baseCurrency = it.getString(it.getColumnIndexOrThrow(COLUMN_BASE_CODE))
+                val targetCurrency = it.getString(it.getColumnIndexOrThrow(COLUMN_TARGET_CODE))
+                val rate = it.getDouble(it.getColumnIndexOrThrow(COLUMN_RATE))
+                val lastUpdated = it.getString(it.getColumnIndexOrThrow(COLUMN_LAST_UPDATED))
+
+                val conversionRate =
+                    ConversionRatesValue(baseCurrency, targetCurrency, rate, lastUpdated)
+                rates.add(conversionRate)
+            }
+        }
+        return rates
     }
 }

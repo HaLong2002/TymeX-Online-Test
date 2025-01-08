@@ -4,5 +4,6 @@
     <string name="indicative_exchange_rate">Indicative Exchange Rate</string>
     <string name="retry">Retry</string>
     <string name="no_network">Please check your network connection and try again.</string>
-    <string name="no_data">No data. Please try again later.</string>
+    <string name="no_data">No data.</string>
+    <string name="last_updated">Last Updated: </string>
 </resources>

@@ -19,7 +19,8 @@ class UpdateConversionRatesWorker(appContext: Context,
     override suspend fun doWork(): Result {
         return try {
             val dbHelper = MyDatabaseHelper(applicationContext)
-            val supportedCodes = dbHelper.getAllSupportedCodes()
+            //val supportedCodes = dbHelper.getAllSupportedCodes()
+            val supportedCodes = const_variables().listCodes
 
             val newRates = mutableListOf<ConversionRates>()
 

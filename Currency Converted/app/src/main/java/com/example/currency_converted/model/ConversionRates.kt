@@ -12,3 +12,10 @@ data class ConversionRates(
     val base_code: String,
     val conversion_rates: Map<String, Double>
 )
+
+data class ConversionRatesValue(
+    val base_code: String,
+    val target_code: String,
+    val rate: Double,
+    val last_updated: String
+)
