@@ -217,8 +217,8 @@ class MainActivity : AppCompatActivity() {
                 // 5. Now that all data is loaded, setup UI
                 initViews()
                 showSupportedCodes(supportedCodes)
-                showIndicativeExchangeRate(defaultBaseCurrency, defaultTargetCurrency)
                 showTimeLastUpdate(defaultBaseCurrency, defaultTargetCurrency)
+                showIndicativeExchangeRate(defaultBaseCurrency, defaultTargetCurrency)
             } catch (e: Exception) {
                 Log.e("initializeApp", "Error: ${e.message}")
                 Log.e("initializeApp", "Failed to initialize app")
