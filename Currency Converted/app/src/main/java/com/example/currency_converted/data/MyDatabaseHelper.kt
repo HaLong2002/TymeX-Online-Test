@@ -6,10 +6,10 @@ import android.database.Cursor
 import android.database.sqlite.SQLiteDatabase
 import android.database.sqlite.SQLiteOpenHelper
 import android.util.Log
-import com.example.currency_converted.const_variables
 import com.example.currency_converted.model.ConversionRates
 import com.example.currency_converted.model.ConversionRatesValue
 import com.example.currency_converted.model.SupportedCodes
+import com.example.currency_converted.util.const_variables
 
 
 class MyDatabaseHelper(context: Context) :
@@ -110,9 +110,12 @@ class MyDatabaseHelper(context: Context) :
     }
 
     fun getAllSupportedCodes(): List<String> {
+        val listCodes: List<String> = const_variables().listCodes
         val codes = mutableListOf<String>()
         val db = this.readableDatabase
-        val query = "SELECT * FROM $TABLE_SUPPORTED_CODES"
+        //val query = "SELECT * FROM $TABLE_SUPPORTED_CODES"
+        val query =
+            "SELECT * FROM $TABLE_SUPPORTED_CODES WHERE code IN (${listCodes.joinToString(",") { "'$it'" }})"
 
         var cursor: Cursor? = null
         if (db != null) {
@@ -129,12 +132,9 @@ class MyDatabaseHelper(context: Context) :
     }
 
     fun getAllSupportedCodesAndName(): List<String> {
-        val listCodes: List<String> = const_variables().listCodes
         val codes = mutableListOf<String>()
         val db = this.readableDatabase
-        //val query = "SELECT * FROM $TABLE_SUPPORTED_CODES"
-        val query =
-            "SELECT * FROM $TABLE_SUPPORTED_CODES WHERE code IN (${listCodes.joinToString(",") { "'$it'" }})"
+        val query = "SELECT * FROM $TABLE_SUPPORTED_CODES"
 
         var cursor: Cursor? = null
         if (db != null) {
@@ -173,6 +173,7 @@ class MyDatabaseHelper(context: Context) :
                 rates.add(conversionRate)
             }
         }
+        Log.i("MyDatabaseHelper", "Conversion Rates: $rates")
         return rates
     }
 }

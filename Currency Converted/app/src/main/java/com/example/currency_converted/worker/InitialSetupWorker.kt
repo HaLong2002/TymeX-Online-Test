@@ -1,4 +1,4 @@
-package com.example.currency_converted
+package com.example.currency_converted.worker
 
 import android.content.Context
 import android.util.Log
@@ -8,6 +8,7 @@ import com.example.currency_converted.data.remote.MyDatabaseHelper
 import com.example.currency_converted.data.remote.remote.APIService
 import com.example.currency_converted.data.remote.remote.ApiUtils
 import com.example.currency_converted.model.SupportedCodes
+import com.example.currency_converted.util.PreferencesHelper
 import kotlinx.coroutines.delay
 
 class InitialSetupWorker(
@@ -24,7 +25,7 @@ class InitialSetupWorker(
             val supportedCodes = fetchSupportedCodes()
             if (supportedCodes != null) {
                 saveSupportedCodes(supportedCodes)
-                prefsHelper.setFirstLaunchComplete()
+                Log.i("InitialSetupWorker", "Supported codes: $supportedCodes")
             }
             // Then fetch conversion rates for each supported code
             fetchAllConversionRates()
@@ -50,10 +51,9 @@ class InitialSetupWorker(
     }
 
     private suspend fun fetchAllConversionRates() {
-        //val supportedCodes = dbHelper.getAllSupportedCodes()
-        val listCodes = const_variables().listCodes
+        val supportedCodes = dbHelper.getAllSupportedCodes()
 
-        listCodes.forEach { code ->
+        supportedCodes.forEach { code ->
             try {
                 val rates = apiService.getConversionRates(code)
                 if (rates != null) {

@@ -9,7 +9,7 @@
     android:layout_marginRight="@dimen/dimen_with_border"
     android:layout_marginLeft="@dimen/dimen_with_border"
     android:layout_marginBottom="@dimen/dimen_with_border"
-    tools:context=".MainActivity">
+    tools:context=".ui.MainActivity">
 
     <TextView
         android:id="@+id/app_name"

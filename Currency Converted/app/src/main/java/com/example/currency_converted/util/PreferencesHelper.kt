@@ -1,4 +1,4 @@
-package com.example.currency_converted
+package com.example.currency_converted.util
 
 import android.content.Context
 

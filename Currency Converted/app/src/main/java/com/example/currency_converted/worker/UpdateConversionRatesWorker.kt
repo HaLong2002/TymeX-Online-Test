@@ -1,4 +1,4 @@
-package com.example.currency_converted
+package com.example.currency_converted.worker
 
 import android.content.Context
 import android.util.Log
@@ -19,20 +19,26 @@ class UpdateConversionRatesWorker(appContext: Context,
     override suspend fun doWork(): Result {
         return try {
             val dbHelper = MyDatabaseHelper(applicationContext)
-            //val supportedCodes = dbHelper.getAllSupportedCodes()
-            val supportedCodes = const_variables().listCodes
+            val supportedCodes = dbHelper.getAllSupportedCodes()
 
             val newRates = mutableListOf<ConversionRates>()
 
             supportedCodes.forEach { code ->
-                try {
-                    val rates = mAPIService.getConversionRates(code)
-                    if (rates != null) {
-                        newRates.add(rates) // Collect new rates
+                var retries = 3
+                var success = false
+                while (retries > 0 && !success) {
+                    try {
+                        val rates = mAPIService.getConversionRates(code)
+                        if (rates != null) {
+                            newRates.add(rates) // Collect new rates
+                            success = true
+                        }
+                        delay(1000) // Prevent API rate limits
+                    } catch (e: Exception) {
+                        retries--
+                        Log.e("UpdateWorker", "Failed to fetch rates for $code: ${e.message}. Retries left: $retries")
+                        if (retries == 0) Log.e("UpdateWorker", "Giving up on $code")
                     }
-                    delay(1000) // Prevent API rate limits
-                } catch (e: Exception) {
-                    Log.e("UpdateWorker", "Failed to fetch rates for $code: ${e.message}")
                 }
             }
 

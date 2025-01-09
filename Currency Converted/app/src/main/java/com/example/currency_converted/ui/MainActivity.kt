@@ -1,4 +1,4 @@
-package com.example.currency_converted
+package com.example.currency_converted.ui
 
 import android.os.Bundle
 import android.text.Editable
@@ -23,16 +23,21 @@ import androidx.work.NetworkType
 import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkManager
+import com.example.currency_converted.R
 import com.example.currency_converted.data.remote.MyDatabaseHelper
 import com.example.currency_converted.model.ConversionRatesValue
+import com.example.currency_converted.util.PreferencesHelper
+import com.example.currency_converted.worker.InitialSetupWorker
+import com.example.currency_converted.worker.UpdateConversionRatesWorker
 import com.google.android.material.floatingactionbutton.FloatingActionButton
 import com.google.android.material.progressindicator.CircularProgressIndicator
 import com.google.android.material.textfield.MaterialAutoCompleteTextView
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.math.BigDecimal
 import java.text.DecimalFormat
 import java.text.DecimalFormatSymbols
-import java.util.Calendar
 import java.util.Locale
 import java.util.concurrent.TimeUnit
 
@@ -52,11 +57,13 @@ class MainActivity : AppCompatActivity() {
     private lateinit var retry_button: Button
     private lateinit var lbTimeLastUpdate: TextView
 
+    private var supportedCodes: List<String> = emptyList()
     private var rates: List<ConversionRatesValue> = emptyList()
+
     private lateinit var base_adapter: ArrayAdapter<String>
     private lateinit var target_adapter: ArrayAdapter<String>
     private lateinit var prefsHelper: PreferencesHelper
-    private val dbHelper = MyDatabaseHelper(this)
+    private lateinit var dbHelper: MyDatabaseHelper
 
     // Set default values for base and target currencies
     private val defaultBaseCurrency = "VND"
@@ -74,7 +81,6 @@ class MainActivity : AppCompatActivity() {
             v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom)
             insets
         }
-
         initViews()
         initializeApp()
 
@@ -84,14 +90,22 @@ class MainActivity : AppCompatActivity() {
             base_currency.setText(selectedCurrency)
             val target = target_currency.text.toString()
             showIndicativeExchangeRate(selectedCurrency, target)
-            if (input_amount.text.toString().isNotEmpty() && input_amount.text.toString().substringAfter(",").isNotEmpty())
+            if (input_amount.text.toString().isNotEmpty() && input_amount.text.toString()
+                    .substringAfter(",").isNotEmpty()
+            )
                 convertExchangeRate(
-                    input_amount.text.toString().replace("," ,".").toDouble(),
+                    input_amount.text.toString().replace(",", ".").toDouble(),
                     selectedCurrency,
                     target
                 )
-            else if (input_amount.text.toString().isNotEmpty() && input_amount.text.toString().substringAfter(",").isEmpty())
-                convertExchangeRate(input_amount.text.toString().replace("," ,"").toDouble(), selectedCurrency, target)
+            else if (input_amount.text.toString().isNotEmpty() && input_amount.text.toString()
+                    .substringAfter(",").isEmpty()
+            )
+                convertExchangeRate(
+                    input_amount.text.toString().replace(",", "").toDouble(),
+                    selectedCurrency,
+                    target
+                )
         }
 
         target_currency.setOnItemClickListener { parent, view, position, id ->
@@ -99,10 +113,22 @@ class MainActivity : AppCompatActivity() {
             val selectedItem = parent.getItemAtPosition(position).toString().trim()
             val base = base_currency.text.toString()
             showIndicativeExchangeRate(base, selectedItem)
-            if (input_amount.text.toString().isNotEmpty() && input_amount.text.toString().substringAfter(",").isNotEmpty())
-                convertExchangeRate(input_amount.text.toString().replace("," ,".").toDouble(), base, selectedItem)
-            else if (input_amount.text.toString().isNotEmpty() && input_amount.text.toString().substringAfter(",").isEmpty())
-                convertExchangeRate(input_amount.text.toString().replace("," ,"").toDouble(), base, selectedItem)
+            if (input_amount.text.toString().isNotEmpty() && input_amount.text.toString()
+                    .substringAfter(",").isNotEmpty()
+            )
+                convertExchangeRate(
+                    input_amount.text.toString().replace(",", ".").toDouble(),
+                    base,
+                    selectedItem
+                )
+            else if (input_amount.text.toString().isNotEmpty() && input_amount.text.toString()
+                    .substringAfter(",").isEmpty()
+            )
+                convertExchangeRate(
+                    input_amount.text.toString().replace(",", "").toDouble(),
+                    base,
+                    selectedItem
+                )
         }
 
         input_amount.addTextChangedListener(object : TextWatcher {
@@ -118,6 +144,7 @@ class MainActivity : AppCompatActivity() {
                     convertExchangeRate(userInput, base, target)
                 }
             }
+
             override fun afterTextChanged(p0: Editable?) {
                 p0?.let {
                     val input = it.toString()
@@ -152,6 +179,53 @@ class MainActivity : AppCompatActivity() {
         lbTimeLastUpdate = findViewById(R.id.time_last_update)
     }
 
+    private fun initializeApp() {
+        lifecycleScope.launch {
+            try {
+                // 1. Initial Setup
+                prefsHelper = PreferencesHelper(applicationContext)
+                dbHelper = MyDatabaseHelper(applicationContext)
+
+                if (prefsHelper.isFirstLaunch()) {
+                    Log.d("MainActivity", "First launch - fetching initial data")
+                    // Wait for initial fetch to complete
+                    withContext(Dispatchers.IO) {
+                        setupInitialFetch()
+                    }
+                    prefsHelper.setFirstLaunchComplete()
+                }
+
+                // 2. Setup periodic updates
+                setupPeriodicUpdate()
+
+                // 3. Load all required data
+                withContext(Dispatchers.IO) {
+                    supportedCodes = getAllSupportedCodes()
+                    rates = getAllConversionRates()
+                }
+
+                // 4. Verify data is loaded
+                if (rates.isEmpty() || supportedCodes.isEmpty()) {
+                    Log.d("MainActivity", "No data found, triggering fetch")
+                    withContext(Dispatchers.IO) {
+                        setupInitialFetch()
+                        supportedCodes = getAllSupportedCodes()
+                        rates = getAllConversionRates()
+                    }
+                }
+
+                // 5. Now that all data is loaded, setup UI
+                initViews()
+                showSupportedCodes(supportedCodes)
+                showIndicativeExchangeRate(defaultBaseCurrency, defaultTargetCurrency)
+                showTimeLastUpdate(defaultBaseCurrency, defaultTargetCurrency)
+            } catch (e: Exception) {
+                Log.e("initializeApp", "Error: ${e.message}")
+                Log.e("initializeApp", "Failed to initialize app")
+            }
+        }
+    }
+
     private fun setupInitialFetch() {
         val constraints = Constraints.Builder()
             .setRequiredNetworkType(NetworkType.CONNECTED)
@@ -174,56 +248,25 @@ class MainActivity : AppCompatActivity() {
             .setRequiredNetworkType(NetworkType.CONNECTED)  // Require internet connection
             .build()
 
-        // Calculate initial delay until next midnight
-        val currentTime = Calendar.getInstance()
-        val nextRun = Calendar.getInstance().apply {
-            add(Calendar.DAY_OF_YEAR, 1)
-            set(Calendar.HOUR_OF_DAY, 0)
-            set(Calendar.MINUTE, 0)
-            set(Calendar.SECOND, 0)
-        }
-
-        val initialDelay = nextRun.timeInMillis - currentTime.timeInMillis
-
         val updateRequest = PeriodicWorkRequestBuilder<UpdateConversionRatesWorker>(
-            7, TimeUnit.DAYS,  // Repeat every 7 days
+            24, TimeUnit.HOURS,  // Repeat every 24 hours
+            15, TimeUnit.MINUTES // Flex period - work can start up to 15 minutes early
         )
-            .setInitialDelay(initialDelay, TimeUnit.MILLISECONDS)
             .setConstraints(constraints)
-            .addTag("conversion_rate_update")  // Tag for identifying the work
+            .addTag("exchange_rate_update")
             .build()
 
         WorkManager.getInstance(applicationContext)
             .enqueueUniquePeriodicWork(
-                "conversion_rate_update",
+                "exchange_rate_update",
                 ExistingPeriodicWorkPolicy.KEEP,  // Keep existing if one exists
                 updateRequest
             )
     }
 
-    private fun initializeApp() {
-        lifecycleScope.launch {
-            try {
-                prefsHelper = PreferencesHelper(applicationContext)
-                if (prefsHelper.isFirstLaunch()) {
-                    setupInitialFetch()
-                }
-
-                setupPeriodicUpdate()
-                getAllSupportedCodes()
-                getAllConversionRates()
-
-                // Ensure rates and supported codes are fetched before calling these
-                showIndicativeExchangeRate(defaultBaseCurrency, defaultTargetCurrency)
-                showTimeLastUpdate(defaultBaseCurrency, defaultTargetCurrency)
-            } catch (e: Exception) {
-                Log.e("initializeApp", "Error: ${e.message}")
-            }
-        }
-    }
-
-    private fun getAllSupportedCodes() {
-        showSupportedCodes(dbHelper.getAllSupportedCodesAndName())
+    private fun getAllSupportedCodes(): List<String> {
+        //showSupportedCodes(dbHelper.getAllSupportedCodes())
+        return dbHelper.getAllSupportedCodes()
     }
 
     private fun showSupportedCodes(list: List<String>) {
@@ -275,8 +318,8 @@ class MainActivity : AppCompatActivity() {
         target_currency.setText(defaultTargetCurrency, false)
     }
 
-    private fun getAllConversionRates() {
-        rates = dbHelper.getAllConversionRates()
+    private fun getAllConversionRates(): List<ConversionRatesValue> {
+        return dbHelper.getAllConversionRates()
     }
 
     private fun showIndicativeExchangeRate(baseCode: String, targetCode: String) {
